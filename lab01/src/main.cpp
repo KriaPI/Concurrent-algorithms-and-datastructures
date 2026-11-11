@@ -119,6 +119,22 @@ int task_1() {
         std::queue<SetEvent> sequence;
 
         // A01: Add a valid sequence of 10+ instructions
+        std::array instructions {
+            SetEvent(SetOperator::Add, 1, true),
+            SetEvent(SetOperator::Add, 2, true),
+            SetEvent(SetOperator::Add, 3, true),
+            SetEvent(SetOperator::Add, 4, true),
+            SetEvent(SetOperator::Add, 1, false),
+            SetEvent(SetOperator::Contains, 1, true),
+            SetEvent(SetOperator::Remove, 1, true),
+            SetEvent(SetOperator::Remove, 2, true),
+            SetEvent(SetOperator::Contains, 1, false),
+            SetEvent(SetOperator::Contains, 2, false),
+        };
+
+        for (auto& instruction: instructions) {
+            sequence.push(instruction);
+        }
 
         StdSet set;
         test_events(&set, &sequence, true);
@@ -130,6 +146,18 @@ int task_1() {
         std::queue<SetEvent> sequence;
 
         // A01: Add a sequence that fails an `add(3)` after 5 instructions
+        std::array instructions {
+            SetEvent(SetOperator::Add, 1, true),
+            SetEvent(SetOperator::Add, 2, true),
+            SetEvent(SetOperator::Add, 3, true),
+            SetEvent(SetOperator::Add, 4, true),
+            SetEvent(SetOperator::Add, 5, true),
+            SetEvent(SetOperator::Add, 3, true),
+        };
+
+        for (auto& instruction: instructions) {
+            sequence.push(instruction);
+        }
 
         StdSet set;
         test_events(&set, &sequence, true);
@@ -141,6 +169,18 @@ int task_1() {
         std::queue<SetEvent> sequence;
 
         // A01: Add a sequence that fails an `contains(3)` after 5 instructions
+        std::array instructions {
+            SetEvent(SetOperator::Add, 1, true),
+            SetEvent(SetOperator::Add, 2, true),
+            SetEvent(SetOperator::Add, 3, true),
+            SetEvent(SetOperator::Add, 4, true),
+            SetEvent(SetOperator::Remove, 4, true),
+            SetEvent(SetOperator::Contains, 3, false),
+        };
+
+        for (auto& instruction: instructions) {
+            sequence.push(instruction);
+        }
 
         StdSet set;
         test_events(&set, &sequence, true);
@@ -152,6 +192,18 @@ int task_1() {
         std::queue<SetEvent> sequence;
 
         // A01: Add a sequence that fails an `remove(3)` after 5 instructions
+        std::array instructions {
+            SetEvent(SetOperator::Add, 1, true),
+            SetEvent(SetOperator::Add, 2, true),
+            SetEvent(SetOperator::Add, 3, true),
+            SetEvent(SetOperator::Add, 4, true),
+            SetEvent(SetOperator::Remove, 3, true),
+            SetEvent(SetOperator::Remove, 3, true),
+        };
+
+        for (auto& instruction: instructions) {
+            sequence.push(instruction);
+        }
 
         StdSet set;
         test_events(&set, &sequence, true);
