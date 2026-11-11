@@ -42,7 +42,7 @@ public:
         head = new SimpleSetNode(INT_MIN, nullptr);
     }
 
-    ~SimpleSet() override {
+    ~SimpleSet() override { 
         // A02: Cleanup any memory that was allocated
         auto previous {head};
         auto current {head};
@@ -75,7 +75,8 @@ public:
         if (removalPoint != nullptr && removalPoint->value == elem) {
             auto afterRemovalPoint {removalPoint->next};
             beforeRemovalPoint->next = afterRemovalPoint;
-            delete removalPoint;
+            // No delete here since it would crash the program if multiple threads were to try to 
+            // remove the same element.
             result = true;
         }
         
