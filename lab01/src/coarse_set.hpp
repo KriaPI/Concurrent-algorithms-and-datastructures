@@ -59,6 +59,7 @@ public:
         // A03: Add code to insert the element into the set and update `result`.
         //      Also make sure, to insert the event inside the locked region of
         //      the linearization point.
+        std::lock_guard guard {lock};
         auto beforeInsertionPoint {search(elem)};
         if (beforeInsertionPoint->next == nullptr || beforeInsertionPoint->next->value != elem) {
             auto newNode {new CoarseSetNode(elem, beforeInsertionPoint->next)};
@@ -75,6 +76,7 @@ public:
         // A03: Add code to remove the element from the set and update `result`.
         //      Also make sure, to insert the event inside the locked region of
         //      the linearization point.
+        std::lock_guard guard {lock};
         auto beforeRemovalPoint {search(elem)};
         auto removalPoint {beforeRemovalPoint->next};
         if (removalPoint != nullptr && removalPoint->value == elem) {
@@ -93,6 +95,7 @@ public:
         // A03: Add code to check if the element is inside the set and update `result`.
         //      Also make sure, to insert the event inside the locked region of
         //      the linearization point.
+        std::lock_guard guard {lock};
         auto expectedElement {search(elem)->next};
         if (expectedElement != nullptr && expectedElement->value == elem) {
             result = true;
