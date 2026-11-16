@@ -1,6 +1,6 @@
 # You might need to specify your g++, for example with g++-11
 CC := g++
-CFLAGS := -Wall -g -lpthread -std=c++20 -fsanitize=address -fno-omit-frame-pointer
+CFLAGS := -Wall -g -lpthread -std=c++20
 TARGET := a.out
 
 # $(wildcard *.cpp /xxx/xxx/*.cpp): get all .cpp files from the current directory and dir "/xxx/xxx/"

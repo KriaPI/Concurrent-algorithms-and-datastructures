@@ -13,10 +13,9 @@ struct FineSetNode {
     // A04: You can add or remove fields as needed.
     int value;
     FineSetNode* next;
-    std::mutex lock;
+    std::mutex mutex;
 };
 
-// TODO: implement fine-grained locking, look at your solution to IPP assignment 2
 
 /// A set implementation using a linked list with fine grained locking.
 class FineSet: public Set {
@@ -24,25 +23,34 @@ private:
     // A04: You can add or remove fields as needed. Just having the `head`
     // pointer should be sufficient for task 4
     FineSetNode* head;
+    FineSetNode* tail;
     EventMonitor<FineSet, StdSet, SetOperator>* monitor;
 
-    /// Get the node before the node with the value "element", a value larger than "element",
-    /// or the end of the list. The pointer returned will always be non-null. 
-    FineSetNode* search(int element) {
+    /// Find the node whose value is larger than element and the node before it.
+    /// @return A pair containing the nodes (previous, current), where current is the 
+    /// found node and previous is the node preceding it. 
+    std::pair<FineSetNode*, FineSetNode*> search(int element) {
+        head->mutex.lock();
         auto previous {head};
-        auto current {head};
-        while (current != nullptr && current->value < element) {
+        auto current {previous->next};
+        current->mutex.lock();
+
+        while (current->value < element) {
+            previous->mutex.unlock();
             previous = current;
             current = current->next;
+            current->mutex.lock();
         }
-        return previous;
+        return std::pair(previous, current);
     }
+
 public:
     FineSet(EventMonitor<FineSet, StdSet, SetOperator>* monitor) :
         monitor(monitor)
     {
         // A04: Initiate the internal state
-        head = new FineSetNode(INT_MIN, nullptr);        
+        tail = new FineSetNode(INT_MAX, nullptr);        
+        head = new FineSetNode(INT_MIN, tail);        
     }
 
     ~FineSet() override {
@@ -61,14 +69,18 @@ public:
         // A04: Add code to insert the element into the set and update `result`.
         //      Also make sure, to insert the event inside the locked region of
         //      the linearization point.
-        auto beforeInsertionPoint {search(elem)};
-        if (beforeInsertionPoint->next == nullptr || beforeInsertionPoint->next->value != elem) {
-            auto newNode {new FineSetNode(elem, beforeInsertionPoint->next)};
-            beforeInsertionPoint->next = newNode;
+        auto [beforeFoundNode, foundNode] {search(elem)};
+
+        if (foundNode->value != elem) {
             result = true;
+            this->monitor->add(SetEvent(SetOperator::Add, elem, result));
+
+            auto newNode {new FineSetNode(elem, foundNode)};
+            beforeFoundNode->next = newNode;    
         }
 
-        this->monitor->add(SetEvent(SetOperator::Add, elem, result));
+        foundNode->mutex.unlock();
+        beforeFoundNode->mutex.unlock();
         return result;
     }
 
@@ -77,16 +89,24 @@ public:
         // A04: Add code to remove the element from the set and update `result`.
         //      Also make sure, to insert the event inside the locked region of
         //      the linearization point.
-        auto beforeRemovalPoint {search(elem)};
-        auto removalPoint {beforeRemovalPoint->next};
-        if (removalPoint != nullptr && removalPoint->value == elem) {
-            auto afterRemovalPoint {removalPoint->next};
-            beforeRemovalPoint->next = afterRemovalPoint;
-            delete removalPoint;
+        auto [beforeFoundNode, foundNode] {search(elem)};
+
+        if (foundNode->value == elem) {
             result = true;
+            this->monitor->add(SetEvent(SetOperator::Remove, elem, result));
+
+            auto afterFoundNode {foundNode->next};
+            beforeFoundNode->next = afterFoundNode;
+            
+            // Note that we must unlock it before we delete it because it is otherwise undefined
+            // behaviour.
+            foundNode->mutex.unlock();
+            delete foundNode;
+        } else {
+            foundNode->mutex.unlock();
         }
 
-        this->monitor->add(SetEvent(SetOperator::Remove, elem, result));
+        beforeFoundNode->mutex.unlock();
         return result;
     }
 
@@ -95,12 +115,16 @@ public:
         // A04: Add code to check if the element is inside the set and update `result`.
         //      Also make sure, to insert the event inside the locked region of
         //      the linearization point.
-        auto expectedElement {search(elem)->next};
-        if (expectedElement != nullptr && expectedElement->value == elem) {
+
+        auto [beforeFoundNode, foundNode] {search(elem)};
+
+        if (foundNode->value == elem) {
             result = true;
+            this->monitor->add(SetEvent(SetOperator::Contains, elem, result));
         }
 
-        this->monitor->add(SetEvent(SetOperator::Contains, elem, result));
+        foundNode->mutex.unlock();
+        beforeFoundNode->mutex.unlock();
         return result;
     }
 
